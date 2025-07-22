@@ -1,0 +1,50 @@
+interface plugin-types {
+    use discord-types.{requests as discord-requests};
+    use shared-types.{contexts};
+
+    /// context is JSON.
+    record init-response {
+        registered-events: init-response-registered-events,
+        scheduled-tasks: list<init-response-scheduled-task>,
+        dependency-functions: list<string>,
+        context: list<u8>,
+    }
+
+    /// interaction-create-commands entries are JSON, check the [Discord Application Command docs] for the structure.
+    ///
+    /// [Discord Application Command docs]: https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-structure
+    record init-response-registered-events {
+        interaction-create-commands: list<list<u8>>,
+        message-create: bool,
+    }
+
+    record init-response-scheduled-task {
+        name: string,
+        cron: string,
+    }
+
+    record event-response {
+        response: result<list<discord-requests>, string>,
+        context: contexts,
+    }
+
+    record scheduled-task-response {
+        response: result<list<discord-requests>, string>,
+        context: contexts,
+    }
+}
+
+interface plugin-functions {
+    use plugin-types.{init-response, event-response, scheduled-task-response};
+    use shared-types.{contexts, dependency-response};
+    use discord-types.{events as discord-events};
+
+    /// settings is JSON.
+    init: func(settings: list<u8>) -> result<init-response, string>;
+    cleanup: func(context: contexts) -> result<_, string>;
+ 
+    event: func(event: discord-events, context: contexts) -> event-response;
+    scheduled-task: func(task: string, context: contexts) -> scheduled-task-response;
+    /// params is JSON.
+    dependency: func(function: string, params: list<u8>, contexts: contexts) -> dependency-response;
+}

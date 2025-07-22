@@ -1,0 +1,13 @@
+interface shared-types {
+    /// host and plugin are JSON.
+    record contexts {
+        host: list<u8>,
+        plugin: list<u8>,
+    }
+
+    /// response Ok is JSON.
+    record dependency-response {
+        response: result<string, string>,
+        context: contexts,
+    }
+}
