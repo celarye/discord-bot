@@ -1,0 +1,34 @@
+interface host-types {
+    enum log-levels {
+        trace,
+        debug,
+        info,
+        warn,
+        error,
+    }
+}
+
+interface host-resources {
+    // TODO: How should this be implemented?
+    resource data {
+        get: func();
+        set: func();
+    }
+}
+
+interface host-functions {
+    use host-types.{log-levels};
+    use discord-types.{requests as discord-requests, responses as discord-responses};
+
+    shutdown: func(restart: bool);
+
+    log: func(level: log-levels, value: string);
+
+    add-scheduled-job: func(name: string, cron: string) -> result<_, string>;
+    remove-scheduled-job: func(name: string) -> result<_, string>;
+
+    discord: func(request: discord-requests) -> result<discord-responses, string>;
+
+    /// params and result Ok are JSON.
+    dependency: func(dependency: string, function: string, params: list<u8>) -> result<list<u8>, string>;
+}
