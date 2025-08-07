@@ -1,0 +1,25 @@
+interface host-types {
+    enum log-levels {
+        trace,
+        debug,
+        info,
+        warn,
+        error,
+    }
+}
+
+interface host-functions {
+    use host-types.{log-levels};
+    use discord-types.{requests as discord-requests, responses as discord-responses};
+
+    shutdown: func(restart: bool);
+
+    log: func(level: log-levels, value: string);
+
+    // TODO: Maybe add support for individual registrations and registration removals?
+
+    discord: func(request: discord-requests) -> result<discord-responses, string>;
+
+    /// params and result Ok are JSON.
+    dependency: func(dependency: string, function: string, params: list<u8>) -> result<list<u8>, string>;
+}
