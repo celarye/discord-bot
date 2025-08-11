@@ -1,0 +1,26 @@
+interface discord-types {
+    /// variant data is JSON, check the [Discord Gateway Event docs] for the structures.
+    ///
+    /// [Discord Gateway Event docs]: https://discord.com/developers/docs/events/gateway-events
+    variant events {
+        message-create(list<u8>),
+        interaction-create(list<u8>),
+    }
+
+    /// variant data last tuple entry might be JSON, check the Discord [Gateway Send Event] and HTTP Resource (like the [Message Resource docs]) docs for the structures.
+    ///
+    /// [Gateway Send Event]: https://discord.com/developers/docs/events/gateway-events#send-events
+    /// [Message Resource]: https://discord.com/developers/docs/resources/message
+    variant requests {
+        request-guild-members,
+        request-soundboard-sounds,
+        update-voice-state,
+        update-presence,
+
+        create-message(tuple<u64, list<u8>>),
+        interaction-callback(tuple<u64, string, list<u8>>),
+    }
+
+    /// responses is JSON.
+    type responses = list<u8>;
+}
