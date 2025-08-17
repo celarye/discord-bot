@@ -1,0 +1,39 @@
+interface plugin-types {
+    record supported-registrations {
+        interaction-create-commands: bool,
+        message-create: bool,
+    }
+
+    record registrations-response {
+        discord-events: registrations-response-discord-events,
+        scheduled-jobs: list<registrations-response-scheduled-job>,
+        dependency-functions: list<string>,
+    }
+
+    /// interaction-create-commands entries are JSON, check the [Discord Application Command docs] for the structure.
+    ///
+    /// [Discord Application Command docs]: https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-structure
+    record registrations-response-discord-events {
+        interaction-create-commands: list<list<u8>>,
+        message-create: bool,
+    }
+
+    record registrations-response-scheduled-job {
+        name: string,
+        cron: string,
+    }
+}
+
+interface plugin-functions {
+    use plugin-types.{supported-registrations, registrations-response};
+    use discord-types.{events as discord-events, requests as discord-requests};
+
+    /// settings is JSON.
+    registrations: func(settings: list<u8>, supported-registrations: supported-registrations) -> result<registrations-response, string>;
+    shutdown: func() -> result<_, string>;
+
+    discord-event: func(event: discord-events) -> result<list<discord-requests>, string>;
+    scheduled-job: func(job: string) -> result<list<discord-requests>, string>;
+    /// params and result Ok are JSON.
+    dependency: func(function: string, params: list<u8>) -> result<list<u8>, string>;
+}
