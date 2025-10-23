@@ -160,13 +160,20 @@ impl Runtime {
                 }
             };
 
-            let registrations_response = match instance
-                .discord_bot_plugin_plugin_functions()
-                .call_registrations(
-                    &mut store,
-                    &simd_json::to_vec(&plugin.settings.unwrap_or(OwnedValue::default())).unwrap(),
-                    supported_registrations,
-                )
+            let registrations_response = match store
+                .run_concurrent(async |accessor| {
+                    instance
+                        .discord_bot_plugin_plugin_functions()
+                        .call_registrations(
+                            accessor,
+                            simd_json::to_vec(&plugin.settings.unwrap_or(OwnedValue::default()))
+                                .unwrap(),
+                            supported_registrations,
+                        )
+                        .await
+                        .unwrap()
+                })
+                .await
                 .unwrap()
             {
                 Ok(init_result) => init_result,
@@ -307,10 +314,10 @@ impl Runtime {
                     while let Some(message) = dbc_js_rx.recv().await {
                         match message {
                             RuntimeMessages::CallDiscordEvent(plugin_name, event) => {
-                                runtime.call_discord_event(&plugin_name, &event).await;
+                                runtime.call_discord_event(&plugin_name, event).await;
                             }
                             RuntimeMessages::CallScheduledJob(plugin_name, scheduled_job_name) => {
-                                runtime.call_scheduled_job(&plugin_name, &scheduled_job_name).await;}
+                                runtime.call_scheduled_job(&plugin_name, scheduled_job_name).await;}
                         };
                     }
                 } => {}
@@ -321,24 +328,40 @@ impl Runtime {
         });
     }
 
-    async fn call_discord_event(&self, plugin_name: &str, event: &DiscordEvents) {
+    async fn call_discord_event(&self, plugin_name: &str, event: DiscordEvents) {
         let plugins = self.plugins.read().await;
         let plugin = plugins.get(plugin_name).unwrap();
 
         let _ = plugin
-            .instance
-            .discord_bot_plugin_plugin_functions()
-            .call_discord_event(&mut *plugin.store.lock().await, event);
+            .store
+            .lock()
+            .await
+            .run_concurrent(async |accessor| {
+                let _ = plugin
+                    .instance
+                    .discord_bot_plugin_plugin_functions()
+                    .call_discord_event(accessor, event)
+                    .await;
+            })
+            .await;
     }
 
-    async fn call_scheduled_job(&self, plugin_name: &str, scheduled_job_name: &str) {
+    async fn call_scheduled_job(&self, plugin_name: &str, scheduled_job_name: String) {
         let plugins = self.plugins.read().await;
         let plugin = plugins.get(plugin_name).unwrap();
 
         let _ = plugin
-            .instance
-            .discord_bot_plugin_plugin_functions()
-            .call_scheduled_job(&mut *plugin.store.lock().await, scheduled_job_name);
+            .store
+            .lock()
+            .await
+            .run_concurrent(async |accessor| {
+                let _ = plugin
+                    .instance
+                    .discord_bot_plugin_plugin_functions()
+                    .call_scheduled_job(accessor, scheduled_job_name)
+                    .await;
+            })
+            .await;
     }
 
     pub async fn shutdown(&self, restart: bool) {

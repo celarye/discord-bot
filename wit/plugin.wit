@@ -60,11 +60,11 @@ interface plugin-functions {
     use discord-types.{events as discord-events, requests as discord-requests};
 
     /// settings is JSON.
-    registrations: func(settings: list<u8>, supported-registrations: supported-registrations) -> result<registrations-response, string>;
-    shutdown: func() -> result<_, string>;
+    registrations: async func(settings: list<u8>, supported-registrations: supported-registrations) -> result<registrations-response, string>;
+    shutdown: async func() -> result<_, string>;
 
-    discord-event: func(event: discord-events) -> result<_, string>;
-    scheduled-job: func(job: string) -> result<_, string>;
+    discord-event: async func(event: discord-events) -> result<_, string>;
+    scheduled-job: async func(job: string) -> result<_, string>;
     /// params and result Ok are JSON.
-    dependency: func(function: string, params: list<u8>) -> result<list<u8>, string>;
+    dependency: async func(function: string, params: list<u8>) -> result<list<u8>, string>;
 }

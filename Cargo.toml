@@ -32,6 +32,12 @@ twilight-cache-inmemory = "0.16"
 twilight-gateway = { version = "0.16", features = ["simd-json"] }
 twilight-http = { version = "0.16", features = ["simd-json"] }
 twilight-model = "0.16"
-wasmtime = { version = "38", features = ["component-model"] }
-wasmtime-wasi = { version = "38", features = [] }
-wasmtime-wasi-http = { version = "38", features = [] }
+wasmtime = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "7e39c25", features = [
+  "component-model-async",
+] } #{ version = "38", features = ["component-model-async"] }
+wasmtime-wasi = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "7e39c25", features = [
+  "p3",
+] } #{ version = "38", features = ["p3"] }
+wasmtime-wasi-http = { git = "https://github.com/bytecodealliance/wasmtime.git", rev = "7e39c25", features = [
+  "p3",
+] } #{ version = "38", features = ["p3"] }

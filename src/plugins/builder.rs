@@ -23,8 +23,8 @@ impl PluginBuilder {
         // component model)
         // Maybe there is a better way to add logging support
         let mut linker = Linker::<InternalRuntime>::new(&engine);
-        wasmtime_wasi::p2::add_to_linker_sync(&mut linker).unwrap();
-        wasmtime_wasi_http::add_only_http_to_linker_sync(&mut linker).unwrap();
+        wasmtime_wasi::p2::add_to_linker_async(&mut linker).unwrap();
+        wasmtime_wasi_http::add_only_http_to_linker_async(&mut linker).unwrap();
 
         Plugin::add_to_linker::<InternalRuntime, HasSelf<InternalRuntime>>(
             &mut linker,
