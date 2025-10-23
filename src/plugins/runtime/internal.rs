@@ -3,6 +3,7 @@ use std::sync::Weak;
 use futures::executor::block_on;
 use tokio::sync::oneshot;
 use tracing::{debug, error, info, trace, warn};
+use wasmtime::component::{Accessor, HasSelf};
 use wasmtime_wasi::{ResourceTable, WasiCtx, WasiCtxView, WasiView};
 use wasmtime_wasi_http::{WasiHttpCtx, WasiHttpView};
 
@@ -13,7 +14,7 @@ use crate::{
             discord_types::{
                 Host as DiscordTypes, Requests as DiscordRequests, Responses as DiscordResponses,
             },
-            host_functions::Host as HostFunctions,
+            host_functions::{Host as HostFunctions, HostWithStore as HostWithStoreFunctions},
             host_types::{Host as HostTypes, LogLevels},
             plugin_types::Host as PluginTypes,
         },
@@ -47,12 +48,14 @@ impl WasiHttpView for InternalRuntime {
     }
 }
 
-impl HostFunctions for InternalRuntime {
-    fn shutdown(&mut self, restart: bool) {
-        block_on(self.runtime.upgrade().unwrap().shutdown(restart))
+impl HostWithStoreFunctions for HasSelf<InternalRuntime> {
+    async fn shutdown<T>(accessor: &Accessor<T, Self>, restart: bool) {
+        let runtime = accessor.with(|mut access| access.get().runtime.upgrade().unwrap());
+
+        runtime.shutdown(restart).await;
     }
 
-    fn log(&mut self, level: LogLevels, message: String) {
+    async fn log<T>(_accessor: &Accessor<T, Self>, level: LogLevels, message: String) {
         match level {
             LogLevels::Trace => trace!(message),
             LogLevels::Debug => debug!(message),
@@ -62,8 +65,11 @@ impl HostFunctions for InternalRuntime {
         }
     }
 
-    fn discord_request(&mut self, request: DiscordRequests) -> Result<DiscordResponses, String> {
-        let runtime = self.runtime.upgrade().unwrap();
+    async fn discord_request<T>(
+        accessor: &Accessor<T, Self>,
+        request: DiscordRequests,
+    ) -> Result<DiscordResponses, String> {
+        let runtime = accessor.with(|mut access| access.get().runtime.upgrade().unwrap());
 
         let (tx, rx) = oneshot::channel();
 
@@ -91,13 +97,13 @@ impl HostFunctions for InternalRuntime {
         }
     }
 
-    fn dependency(
-        &mut self,
+    async fn dependency<T>(
+        accessor: &Accessor<T, Self>,
         dependency: String,
         function: String,
         params: Vec<u8>,
     ) -> Result<Vec<u8>, String> {
-        let runtime = self.runtime.upgrade().unwrap();
+        let runtime = accessor.with(|mut access| access.get().runtime.upgrade().unwrap());
 
         let plugins = block_on(runtime.plugins.read());
         let plugin = plugins.get(&dependency).unwrap();
@@ -106,9 +112,18 @@ impl HostFunctions for InternalRuntime {
         // the potential deadlocks.
 
         match plugin
-            .instance
-            .discord_bot_plugin_plugin_functions()
-            .call_dependency(&mut *block_on(plugin.store.lock()), &function, &params)
+            .store
+            .lock()
+            .await
+            .run_concurrent(async |accessor| {
+                plugin
+                    .instance
+                    .discord_bot_plugin_plugin_functions()
+                    .call_dependency(accessor, function, params)
+                    .await
+                    .unwrap()
+            })
+            .await
         {
             Ok(call_result) => match call_result {
                 Ok(dependency_result) => Ok(dependency_result),
@@ -127,6 +142,7 @@ impl HostFunctions for InternalRuntime {
     }
 }
 
+impl HostFunctions for InternalRuntime {}
 impl HostTypes for InternalRuntime {}
 impl PluginTypes for InternalRuntime {}
 impl DiscordTypes for InternalRuntime {}
