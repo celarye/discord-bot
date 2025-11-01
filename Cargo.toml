@@ -1,0 +1,37 @@
+[package]
+name = "discord-bot"
+description = "A WASI plugin based Discord bot, configurable through YAML."
+version = "0.1.0"
+authors = ["Eduard Smet <contact@celarye.dev>"]
+license = "GPL-3.0-or-later"
+edition = "2024"
+
+[features]
+dotenv = []
+
+[dependencies]
+bytes = "1"
+chrono = "0.4"
+clap = { version = "4", features = ["derive"] }
+dotenvy = "0.15"
+futures = "0.3"
+indexmap = "2"
+reqwest = { version = "0.12", default-features = false, features = [
+  "rustls-tls",
+] }
+serde = "1"
+simd-json = "0.17"
+serde_yaml_ng = "0.10"
+tokio = { version = "1", features = ["full"] }
+tokio-cron-scheduler = { version = "0.15", features = ["english"] }
+tokio-util = "0.7"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+tracing-appender = "0.2"
+twilight-cache-inmemory = "0.16"
+twilight-gateway = { version = "0.16", features = ["simd-json"] }
+twilight-http = { version = "0.16", features = ["simd-json"] }
+twilight-model = "0.16"
+wasmtime = { version = "38", features = ["component-model"] }
+wasmtime-wasi = { version = "38", features = [] }
+wasmtime-wasi-http = { version = "38", features = [] }
