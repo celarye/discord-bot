@@ -1,0 +1,23 @@
+interface host-types {
+    enum log-levels {
+        trace,
+        debug,
+        info,
+        warn,
+        error,
+    }
+}
+
+interface host-functions {
+    use host-types.{log-levels};
+    use discord-types.{requests as discord-requests, responses as discord-responses};
+
+    log: func(level: log-levels, message: string);
+
+    discord-request: func(request: discord-requests) -> result<option<discord-responses>, string>;
+
+    /// params, result Ok and Err are JSON.
+    dependency: func(dependency: string, function: string, params: list<u8>) -> result<list<u8>, string>;
+
+    shutdown: func(restart: bool);
+}

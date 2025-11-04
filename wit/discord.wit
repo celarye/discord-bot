@@ -1,0 +1,48 @@
+interface discord-types {
+    /// variant data is JSON, check the [Discord Gateway Event docs] for the structures.
+    ///
+    /// [Discord Gateway Event docs]: https://discord.com/developers/docs/events/gateway-events
+    variant events {
+        interaction-create(list<u8>),
+        message-create(list<u8>),
+        thread-create(list<u8>),
+        thread-delete(list<u8>),
+        thread-list-sync(list<u8>),
+        thread-member-update(list<u8>),
+        thread-members-update(list<u8>),
+        thread-update(list<u8>),
+    }
+
+    /// variant data last tuple entry might be JSON, check the Discord [Gateway Send Event] and HTTP Resource (like the [Message Resource docs]) docs for the structures.
+    ///
+    /// [Gateway Send Event]: https://discord.com/developers/docs/events/gateway-events#send-events
+    /// [Message Resource]: https://discord.com/developers/docs/resources/message
+    variant requests {
+        // TODO: Implement response events
+        request-guild-members(tuple<u64, list<u8>>),
+        request-soundboard-sounds(list<u64>),
+        update-voice-state(tuple<u64, list<u8>>),
+        update-presence(list<u8>),
+
+        add-thread-member(tuple<u64, u64>),
+        create-forum-thread(tuple<u64, list<u8>>),
+        create-message(tuple<u64, list<u8>>),
+        create-thread(tuple<u64, list<u8>>),
+        create-thread-from-message(tuple<u64, u64, list<u8>>),
+        get-active-threads(u64),
+        get-channel(u64),
+        get-joined-private-archived-threads(tuple<option<u64>, u64, option<u64>>),
+        get-private-archived-threads(tuple<option<string>, u64, option<u64>>),
+        get-public-archived-threads(tuple<option<string>, u64, option<u64>>),
+        get-thread-member(tuple<u64, u64>),
+        get-thread-members(tuple<option<u64>, u64, option<u32>, option<bool>>),
+        interaction-callback(tuple<u64, string, list<u8>>),
+        join-thread(u64),
+        leave-thread(u64),
+        remove-thread-member(tuple<u64, u64>),
+        update-interaction-original(tuple<u64, string, list<u8>>),
+    }
+
+    /// responses is JSON.
+    type responses = list<u8>;
+}
