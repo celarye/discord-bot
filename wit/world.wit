@@ -1,0 +1,7 @@
+package discord-bot:plugin@0.1.0;
+
+world plugin {
+    import host-functions;
+
+    export plugin-functions;
+}
