@@ -10,6 +10,7 @@ use crate::{
 };
 
 impl DiscordBotClient {
+    #[allow(clippy::too_many_lines)]
     pub async fn handle_event(discord_bot_client: Arc<DiscordBotClient>, event: Event) {
         match event {
             Event::InteractionCreate(interaction_create) => {

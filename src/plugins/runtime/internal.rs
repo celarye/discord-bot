@@ -6,6 +6,7 @@ use wasmtime_wasi::{ResourceTable, WasiCtx, WasiCtxView, WasiView};
 use wasmtime_wasi_http::{WasiHttpCtx, WasiHttpView};
 
 use crate::{
+    Shutdown,
     channels::DiscordBotClientMessages,
     plugins::{
         discord_bot::plugin::{
@@ -126,7 +127,17 @@ impl HostFunctions for InternalRuntime {
     }
 
     async fn shutdown(&mut self, restart: bool) {
-        self.runtime.upgrade().unwrap().shutdown(restart).await;
+        let shutdown_type = if restart {
+            Shutdown::Restart
+        } else {
+            Shutdown::Normal
+        };
+
+        self.runtime
+            .upgrade()
+            .unwrap()
+            .shutdown(shutdown_type)
+            .await;
     }
 }
 

@@ -41,7 +41,7 @@ pub struct RegistryPluginVersion {
 
 type Registries = Arc<RwLock<HashMap<String, Option<Arc<Registry>>>>>;
 
-const DEFAULT_REGISTRY_ID: &str = "celarye/discord-bot-plugins";
+const DEFAULT_REGISTRY_ID: &str = "celarye/discord-bot-plugins/";
 
 pub async fn get_plugins(
     http_client: Arc<HttpClient>,
@@ -66,6 +66,7 @@ pub async fn get_plugins(
             let (registry_id, plugin_registry_id, requested_version) =
                 parse_plugin_string(&plugin_options.plugin);
 
+            // FIXME: Prevent mutliple plugins with the same registry to fetch it at the same time
             if !registries.read().await.contains_key(registry_id)
                 && fetch_registry(&registries, registry_id, &plugin_id, http_client.clone())
                     .await
@@ -157,10 +158,8 @@ pub async fn get_plugins(
 }
 
 fn parse_plugin_string(value: &str) -> (&str, String, &str) {
-    let (registry_id, plugin_registry_id_version) = match value.rsplit_once('/') {
-        Some((registry_id, plugin_registry_id_version)) => {
-            (registry_id, plugin_registry_id_version)
-        }
+    let (registry_id, plugin_registry_id_version) = match value.rfind('/') {
+        Some(index) => (&value[..=index], &value[(index + 1)..]),
         None => (DEFAULT_REGISTRY_ID, value),
     };
 

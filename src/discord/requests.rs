@@ -17,6 +17,7 @@ use crate::{
 };
 
 impl DiscordBotClient {
+    #[allow(clippy::too_many_lines)]
     pub async fn request(
         &self,
         request: DiscordRequests,

@@ -4,13 +4,13 @@ use reqwest::{
     StatusCode,
     header::{HeaderMap, HeaderValue},
 };
-use tracing::{debug, error};
+use tracing::{error, info};
 use url::{ParseError, Url};
 
 use crate::http::HttpClient;
 
 static REGISTRY_BASE_URL: LazyLock<Url> =
-    LazyLock::new(|| Url::parse("https://api.github.com/repos").unwrap());
+    LazyLock::new(|| Url::parse("https://api.github.com/repos/").unwrap());
 
 impl HttpClient {
     pub async fn get_file_from_registry(&self, registry: &str, path: &str) -> Result<Vec<u8>, ()> {
@@ -34,7 +34,7 @@ impl HttpClient {
             }
         };
 
-        debug!("Requested registry file: {url}");
+        info!("Requested registry file: {url}");
 
         match self.client.get(url).headers(headers).send().await {
             Ok(raw_response) => {
@@ -67,7 +67,7 @@ impl HttpClient {
         REGISTRY_BASE_URL
             .clone()
             .join(registry)?
-            .join("contents")
+            .join("contents/")
             .unwrap()
             .join(path)
     }

@@ -190,9 +190,7 @@ async fn shutdown(runtime: Arc<Runtime>) -> Result<(), ()> {
                 exit(130);
             });
 
-            *SHUTDOWN.write().await = Some(Shutdown::SigInt);
-
-            runtime.shutdown(false).await;
+            runtime.shutdown(Shutdown::SigInt).await;
 
             Ok(())
 

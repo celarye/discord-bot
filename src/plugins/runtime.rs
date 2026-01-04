@@ -441,17 +441,14 @@ impl Runtime {
         }
     }
 
-    pub async fn shutdown(&self, restart: bool) {
+    pub async fn shutdown(&self, shutdown_type: Shutdown) {
         if SHUTDOWN.read().await.is_some() {
+            // TODO: Do not wait for shutdown to complete, the main function shutdown logic needs to get reworked first
             self.cancellation_token.cancelled().await;
             return;
         }
 
-        if restart {
-            *SHUTDOWN.write().await = Some(Shutdown::Restart);
-        } else {
-            *SHUTDOWN.write().await = Some(Shutdown::Normal);
-        }
+        *SHUTDOWN.write().await = Some(shutdown_type);
 
         let job_scheduler_is_done = oneshot::channel();
         let discord_bot_client_is_done = oneshot::channel();

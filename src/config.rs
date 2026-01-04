@@ -9,7 +9,7 @@ use crate::plugins::ConfigPlugin;
 #[derive(Deserialize)]
 pub struct Config {
     #[allow(unused)] // Will be used when multi discord bot client support gets added
-    pub id: String,
+    pub name: String,
     pub plugins: IndexMap<String, ConfigPlugin>,
 }
 
