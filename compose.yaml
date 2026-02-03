@@ -1,0 +1,12 @@
+name: discord-bot-stack
+
+services:
+  discord-bot:
+    #image: ghcr.io/celarye/discord-bot:dev
+    build: .
+    container_name: discord-bot
+    environment:
+      DISCORD_BOT_CLIENT_TOKEN: ${DISCORD_BOT_CLIENT_TOKEN}
+    volumes:
+      - ./discord-bot/config.yaml:/config.yaml
+    restart: unless-stopped
