@@ -1,0 +1,45 @@
+[package]
+name = "discord-bot"
+description = "A WASI plugin based Discord bot, configurable through YAML."
+version = "0.1.0"
+authors = ["Eduard Smet <contact@celarye.dev>"]
+license = "GPL-3.0-or-later"
+edition = "2024"
+
+[features]
+
+[dependencies]
+bytes = "1"
+chrono = "0.4"
+clap = { version = "4", features = ["derive"] }
+dotenvy = "0.15"
+indexmap = "2"
+reqwest = { version = "0.13", features = ["hickory-dns"] }
+rustls = "0.23"
+serde = "1"
+sonic-rs = "0.5"
+serde_yaml_ng = "0.10" # Should replace this with a better maintained YAML 1.2 supporting alternative
+tokio = { version = "1", features = ["full"] }
+tokio-cron-scheduler = { version = "0.15", features = ["english"] }
+tokio-util = "0.7"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+tracing-appender = "0.2"
+twilight-cache-inmemory = { git = "https://github.com/celarye/twilight/", branch = "feat/form-buffer" }
+twilight-gateway = { git = "https://github.com/celarye/twilight/", branch = "feat/form-buffer", features = [
+  "simd-json",
+] }
+twilight-http = { git = "https://github.com/celarye/twilight/", branch = "feat/form-buffer", features = [
+  "simd-json",
+  "hickory",
+] }
+twilight-model = { git = "https://github.com/celarye/twilight/", branch = "feat/form-buffer" }
+url = "2"
+wasmtime = "41"
+wasmtime-wasi = "41"
+wasmtime-wasi-http = "41"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true

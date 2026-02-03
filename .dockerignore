@@ -1,0 +1,9 @@
+**/*
+
+!Cargo.lock
+!Cargo.toml
+!LICENSE
+!README.md
+!.cargo/
+!src/
+!wit/
