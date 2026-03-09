@@ -5,7 +5,7 @@
 use std::os::unix::process::CommandExt;
 
 use std::{
-    collections::VecDeque,
+    collections::{HashMap, VecDeque},
     env,
     ffi::OsString,
     path::{Path, PathBuf},
@@ -139,10 +139,10 @@ fn initialization(
 
 async fn registry_get_plugins(
     http_client_timeout_seconds: u64,
-    config: Box<Config>,
+    config: Config,
     plugin_directory: PathBuf,
     cache: bool,
-) -> Result<Vec<AvailablePlugin>, ()> {
+) -> Result<HashMap<String, AvailablePlugin>, ()> {
     let http_client = Arc::new(HttpClient::new(http_client_timeout_seconds)?);
 
     registry::get_plugins(http_client, config, plugin_directory, cache).await
@@ -150,7 +150,7 @@ async fn registry_get_plugins(
 
 async fn plugin_initializations(
     runtime: Arc<Runtime>,
-    available_plugins: Vec<AvailablePlugin>,
+    available_plugins: HashMap<String, AvailablePlugin>,
     plugin_registrations: Arc<RwLock<PluginRegistrations>>,
     config_directory: &Path,
 ) -> Result<(), ()> {

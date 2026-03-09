@@ -12,7 +12,7 @@ pub struct HttpClient {
     client: Client,
 }
 
-const USER_AGENT: &str = "celarye/discord-bot";
+static USER_AGENT: &str = "celarye/discord-bot";
 
 impl HttpClient {
     pub fn new(http_client_timeout_seconds: u64) -> Result<Self, ()> {
