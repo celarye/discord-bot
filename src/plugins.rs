@@ -7,6 +7,7 @@ pub mod runtime;
 
 use std::collections::{HashMap, HashSet};
 
+use semver::Version;
 use serde::{Deserialize, Deserializer};
 use serde_yaml_ng::Value;
 use twilight_model::id::{Id, marker::CommandMarker};
@@ -15,7 +16,7 @@ use crate::plugins::discord_bot::plugin::plugin_types::SupportedRegistrations;
 
 wasmtime::component::bindgen!({ imports: { default: async }, exports: { default: async } });
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 pub struct ConfigPlugin {
     pub plugin: String,
     pub cache: Option<bool>,
@@ -86,8 +87,9 @@ impl<'de> Deserialize<'de> for SupportedRegistrations {
 }
 
 pub struct AvailablePlugin {
+    pub registry_id: String,
     pub id: String,
-    pub version: String,
+    pub version: Version,
     pub permissions: SupportedRegistrations,
     pub environment: Option<HashMap<String, String>>,
     pub settings: Option<Value>,
