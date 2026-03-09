@@ -818,6 +818,7 @@ dependencies = [
 name = "discord-bot"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "bytes",
  "chrono",
  "clap",
@@ -825,6 +826,7 @@ dependencies = [
  "indexmap",
  "reqwest",
  "rustls 0.23.36",
+ "semver",
  "serde",
  "serde_yaml_ng",
  "sonic-rs",

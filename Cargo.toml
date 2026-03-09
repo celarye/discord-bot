@@ -9,6 +9,7 @@ edition = "2024"
 [features]
 
 [dependencies]
+anyhow = "1"
 bytes = "1"
 chrono = "0.4"
 clap = { version = "4", features = ["derive"] }
@@ -16,9 +17,10 @@ dotenvy = "0.15"
 indexmap = "2"
 reqwest = { version = "0.13", features = ["hickory-dns"] }
 rustls = "0.23"
+semver = "1"
 serde = "1"
-sonic-rs = "0.5"
 serde_yaml_ng = "0.10" # Should replace this with a better maintained YAML 1.2 supporting alternative
+sonic-rs = "0.5"
 tokio = { version = "1", features = ["full"] }
 tokio-cron-scheduler = { version = "0.15", features = ["english"] }
 tokio-util = "0.7"
