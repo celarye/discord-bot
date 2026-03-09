@@ -25,6 +25,7 @@ use crate::{
 };
 
 pub struct InternalRuntime {
+    uid: String,
     wasi: WasiCtx,
     wasi_http: WasiHttpCtx,
     table: ResourceTable,
@@ -150,12 +151,14 @@ impl DiscordTypes for InternalRuntime {}
 
 impl InternalRuntime {
     pub fn new(
+        uid: String,
         wasi: WasiCtx,
         wasi_http: WasiHttpCtx,
         table: ResourceTable,
         runtime: Weak<Runtime>,
     ) -> Self {
         InternalRuntime {
+            uid,
             wasi,
             wasi_http,
             table,

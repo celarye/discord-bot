@@ -88,7 +88,7 @@ impl Runtime {
     pub async fn initialize_plugins(
         runtime: Arc<Runtime>,
         plugin_builder: PluginBuilder,
-        plugins: Vec<AvailablePlugin>,
+        plugins: HashMap<String, AvailablePlugin>,
         plugin_registrations: Arc<RwLock<PluginRegistrations>>,
         directory: &Path,
     ) -> Result<(), ()> {
@@ -101,15 +101,18 @@ impl Runtime {
             scheduled_jobs: vec![],
         };
 
-        for plugin in plugins {
-            let plugin_directory = directory.join(&plugin.id).join(&plugin.version);
+        for (plugin_uid, plugin) in plugins {
+            let plugin_directory = directory
+                .join(&plugin.registry_id)
+                .join(&plugin.id)
+                .join(plugin.version.to_string());
 
             let bytes = match fs::read(plugin_directory.join("plugin.wasm")) {
                 Ok(bytes) => bytes,
                 Err(err) => {
                     error!(
                         "An error occured while reading the {} plugin file: {err}",
-                        plugin.id
+                        plugin_uid
                     );
                     continue;
                 }
@@ -120,7 +123,7 @@ impl Runtime {
                 Err(err) => {
                     error!(
                         "An error occured while creating a WASI component from the {} plugin: {err}",
-                        plugin.id
+                        plugin_uid
                     );
                     continue;
                 }
@@ -140,14 +143,14 @@ impl Runtime {
                     if !exists && let Err(err) = fs::create_dir(&workspace_plugin_dir) {
                         error!(
                             "Something went wrong while creating the workspace directory for the {} plugin, error: {}",
-                            &plugin.id, &err
+                            &plugin_uid, &err
                         );
                     }
                 }
                 Err(err) => {
                     error!(
                         "Something went wrong while checking if the workspace directory of the {} plugin exists, error: {}",
-                        &plugin.id, &err
+                        &plugin_uid, &err
                     );
                     return Err(());
                 }
@@ -162,6 +165,7 @@ impl Runtime {
             let mut store = Store::<InternalRuntime>::new(
                 &plugin_builder.engine,
                 InternalRuntime::new(
+                    plugin_uid.clone(),
                     wasi,
                     WasiHttpCtx::new(),
                     ResourceTable::new(),
@@ -177,7 +181,7 @@ impl Runtime {
                     Err(err) => {
                         error!(
                             "Failed to instantiate the {} plugin, error: {}",
-                            &plugin.id, &err
+                            &plugin_uid, &err
                         );
                         continue;
                     }
@@ -197,7 +201,7 @@ impl Runtime {
                     Err(err) => {
                         error!(
                             "Failed to initialize the {} plugin, error: {}",
-                            &plugin.id, &err
+                            &plugin_uid, &err
                         );
                         continue;
                     }
@@ -205,7 +209,7 @@ impl Runtime {
                 Err(err) => {
                     error!(
                         "The {} plugin exprienced a critical error: {}",
-                        &plugin.id, &err
+                        &plugin_uid, &err
                     );
                     continue;
                 }
@@ -216,12 +220,6 @@ impl Runtime {
                 store: Mutex::new(store),
             };
 
-            runtime
-                .plugins
-                .write()
-                .await
-                .insert(plugin.id.clone(), plugin_context);
-
             if let Some(discord_events) = plugin_registrations_request.discord_events {
                 if discord_events.message_create {
                     plugin_registrations
@@ -229,7 +227,7 @@ impl Runtime {
                         .await
                         .discord_events
                         .message_create
-                        .push(plugin.id.clone());
+                        .push(plugin_uid.clone());
                 }
 
                 if discord_events.thread_create {
@@ -238,7 +236,7 @@ impl Runtime {
                         .await
                         .discord_events
                         .thread_create
-                        .push(plugin.id.clone());
+                        .push(plugin_uid.clone());
                 }
 
                 if discord_events.thread_delete {
@@ -247,7 +245,7 @@ impl Runtime {
                         .await
                         .discord_events
                         .thread_delete
-                        .push(plugin.id.clone());
+                        .push(plugin_uid.clone());
                 }
 
                 if discord_events.thread_list_sync {
@@ -256,7 +254,7 @@ impl Runtime {
                         .await
                         .discord_events
                         .thread_list_sync
-                        .push(plugin.id.clone());
+                        .push(plugin_uid.clone());
                 }
 
                 if discord_events.thread_member_update {
@@ -265,7 +263,7 @@ impl Runtime {
                         .await
                         .discord_events
                         .thread_member_update
-                        .push(plugin.id.clone());
+                        .push(plugin_uid.clone());
                 }
 
                 if discord_events.thread_members_update {
@@ -274,7 +272,7 @@ impl Runtime {
                         .await
                         .discord_events
                         .thread_members_update
-                        .push(plugin.id.clone());
+                        .push(plugin_uid.clone());
                 }
 
                 if discord_events.thread_update {
@@ -283,7 +281,7 @@ impl Runtime {
                         .await
                         .discord_events
                         .thread_update
-                        .push(plugin.id.clone());
+                        .push(plugin_uid.clone());
                 }
 
                 if let Some(interaction_create) = discord_events.interaction_create {
@@ -293,7 +291,7 @@ impl Runtime {
                                 .discord_event_interaction_create
                                 .application_commands
                                 .push(PluginRegistrationRequestsApplicationCommand {
-                                    plugin_id: plugin.id.clone(),
+                                    plugin_id: plugin_uid.clone(),
                                     data: application_command,
                                 });
                         }
@@ -309,7 +307,7 @@ impl Runtime {
                                 .discord_events
                                 .interaction_create
                                 .message_components
-                                .insert(message_component.clone(), plugin.id.clone());
+                                .insert(message_component.clone(), plugin_uid.clone());
                         }
                     }
 
@@ -323,7 +321,7 @@ impl Runtime {
                                 .discord_events
                                 .interaction_create
                                 .modals
-                                .insert(modal.clone(), plugin.id.clone());
+                                .insert(modal.clone(), plugin_uid.clone());
                         }
                     }
                 }
@@ -333,7 +331,7 @@ impl Runtime {
                 for scheduled_job in scheduled_jobs {
                     registration_requests.scheduled_jobs.push(
                         PluginRegistrationRequestsScheduledJob {
-                            plugin_id: plugin.id.clone(),
+                            plugin_id: plugin_uid.clone(),
                             id: scheduled_job.0,
                             crons: scheduled_job.1,
                         },
@@ -346,12 +344,18 @@ impl Runtime {
                     let mut plugin_registrations = plugin_registrations.write().await;
                     let functions = plugin_registrations
                         .dependency_functions
-                        .entry(plugin.id.clone())
+                        .entry(plugin_uid.clone())
                         .or_insert(HashSet::new());
 
                     functions.insert(dependency_function);
                 }
             }
+
+            runtime
+                .plugins
+                .write()
+                .await
+                .insert(plugin_uid, plugin_context);
         }
 
         let _ = runtime

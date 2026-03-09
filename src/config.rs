@@ -17,7 +17,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(file_path: &Path) -> Result<Box<Self>, ()> {
+    pub fn new(file_path: &Path) -> Result<Self, ()> {
         info!("Loading and parsing the config file");
 
         let file_bytes = match fs::read(file_path) {
@@ -29,7 +29,7 @@ impl Config {
         };
 
         match serde_yaml_ng::from_slice::<Config>(&file_bytes) {
-            Ok(config) => Ok(Box::new(config)), // TODO: Env var interpolation, maybe via YAML 1.2's' `!val`
+            Ok(config) => Ok(config), // TODO: Env var interpolation
             Err(err) => {
                 error!(
                     "An error occurred while trying to deserialize the config file YAML to a struct: {err}"
