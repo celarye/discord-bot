@@ -2,5 +2,6 @@
 
 /logs
 /plugins
+discord-bot
 .env
 config.yaml
