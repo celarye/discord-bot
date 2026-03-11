@@ -1,0 +1,35 @@
+use crate::plugins::{
+    discord_bot::plugin::{
+        core_import_types::Error,
+        discord_export_types::Host as DiscordExportTypesHost,
+        discord_import_functions::Host as DiscordImportFunctionsHost,
+        discord_import_types::{
+            DiscordEvents, DiscordRegistrations, DiscordRegistrationsResult, DiscordRequests,
+            DiscordResponses, Host as DiscordImportTypesHost,
+        },
+    },
+    runtime::internal::InternalRuntime,
+};
+
+impl DiscordImportTypesHost for InternalRuntime {}
+impl DiscordExportTypesHost for InternalRuntime {}
+
+impl DiscordImportFunctionsHost for InternalRuntime {
+    async fn get_supported_discord_registrations(&mut self) -> DiscordEvents {
+        todo!()
+    }
+
+    async fn discord_register(
+        &mut self,
+        registrations: DiscordRegistrations,
+    ) -> DiscordRegistrationsResult {
+        todo!()
+    }
+
+    async fn discord_request(
+        &mut self,
+        request: DiscordRequests,
+    ) -> Result<Option<DiscordResponses>, Error> {
+        todo!()
+    }
+}

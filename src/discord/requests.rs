@@ -1,7 +1,10 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 /* Copyright © 2026 Eduard Smet */
 
-use twilight_http::{request::Request, routing::Route};
+use std::{collections::HashMap, sync::Arc};
+
+use twilight_gateway::MessageSender;
+use twilight_http::{Client, request::Request, routing::Route};
 use twilight_model::{
     gateway::{
         OpCode,
@@ -11,21 +14,22 @@ use twilight_model::{
             update_voice_state::UpdateVoiceStateInfo,
         },
     },
-    id::Id,
+    id::{Id, marker::GuildMarker},
 };
 
 use crate::{
     discord::DiscordBotClient,
     plugins::discord_bot::plugin::{
-        discord_types::Contents,
-        host_functions::{DiscordRequests, DiscordResponses},
+        discord_import_functions::{DiscordRequests, DiscordResponses},
+        discord_import_types::Body,
     },
 };
 
 impl DiscordBotClient {
     #[allow(clippy::too_many_lines)]
     pub async fn request(
-        &self,
+        http_client: Arc<Client>,
+        shard_message_senders: Arc<HashMap<Id<GuildMarker>, Arc<MessageSender>>>,
         request: DiscordRequests,
     ) -> Result<Option<DiscordResponses>, String> {
         let request = match request {
@@ -33,11 +37,7 @@ impl DiscordBotClient {
             DiscordRequests::RequestGuildMembers((guild_id, body)) => {
                 let guild_id = Id::new(guild_id);
 
-                let guild_shard_message_sender = if let Some(guild_shard_message_sender) =
-                    self.shard_message_senders.read().await.get(&guild_id)
-                {
-                    guild_shard_message_sender.clone()
-                } else {
+                let Some(guild_shard_message_sender) = shard_message_senders.get(&guild_id) else {
                     return Err(String::from("No guild found"));
                 };
 
@@ -67,11 +67,7 @@ impl DiscordBotClient {
             DiscordRequests::UpdateVoiceState((guild_id, body)) => {
                 let guild_id = Id::new(guild_id);
 
-                let guild_shard_message_sender = if let Some(guild_shard_message_sender) =
-                    self.shard_message_senders.read().await.get(&guild_id)
-                {
-                    guild_shard_message_sender.clone()
-                } else {
+                let Some(guild_shard_message_sender) = shard_message_senders.get(&guild_id) else {
                     return Err(String::from("No guild found"));
                 };
 
@@ -94,11 +90,7 @@ impl DiscordBotClient {
                 None
             }
             DiscordRequests::UpdatePresence(body) => {
-                let guild_shard_message_sender = if let Some(guild_shard_message_sender) =
-                    self.shard_message_senders.read().await.values().next()
-                {
-                    guild_shard_message_sender.clone()
-                } else {
+                let Some(guild_shard_message_sender) = shard_message_senders.values().next() else {
                     return Err(String::from("No guild found"));
                 };
 
@@ -154,8 +146,8 @@ impl DiscordBotClient {
                 let request_builder = Request::builder(&Route::CreateForumThread { channel_id });
 
                 let request_builder = match content {
-                    Contents::Json(bytes) => request_builder.body(bytes),
-                    Contents::Form(buffer) => match request_builder.multipart(buffer) {
+                    Body::Json(bytes) => request_builder.body(bytes),
+                    Body::Form(buffer) => match request_builder.multipart(buffer) {
                         Ok(request) => request,
                         Err(err) => {
                             return Err(err.to_string());
@@ -176,8 +168,8 @@ impl DiscordBotClient {
                 let request_builder = Request::builder(&Route::CreateMessage { channel_id });
 
                 let request_builder = match content {
-                    Contents::Json(bytes) => request_builder.body(bytes),
-                    Contents::Form(buffer) => match request_builder.multipart(buffer) {
+                    Body::Json(bytes) => request_builder.body(bytes),
+                    Body::Form(buffer) => match request_builder.multipart(buffer) {
                         Ok(request) => request,
                         Err(err) => {
                             return Err(err.to_string());
@@ -431,7 +423,7 @@ impl DiscordBotClient {
         };
 
         if let Some(request) = request {
-            match self.http_client.request::<Vec<u8>>(request).await {
+            match http_client.request::<Vec<u8>>(request).await {
                 Ok(response) => Ok(Some(response.bytes().await.unwrap().clone())),
                 Err(err) => Err(format!(
                     "Something went wrong while making a Discord request, error: {err}"

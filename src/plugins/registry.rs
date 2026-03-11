@@ -13,6 +13,7 @@ use semver::{Version, VersionReq};
 use serde::Deserialize;
 use tokio::fs;
 use tracing::{error, info, warn};
+use uuid::Uuid;
 
 use crate::{
     config::Config,
@@ -46,7 +47,7 @@ pub struct RegistryPluginVersion {
     pub deprecation_reason: Option<String>,
 }
 
-type RegistryTask = Vec<tokio::task::JoinHandle<Result<Vec<(String, AvailablePlugin)>>>>;
+type RegistryTask = Vec<tokio::task::JoinHandle<Result<Vec<(Uuid, AvailablePlugin)>>>>;
 
 static DEFAULT_REGISTRY_ID: &str =
     "raw.githubusercontent.com/celarye/discord-bot-plugins/refs/heads/master";
@@ -59,10 +60,10 @@ pub async fn get_plugins(
     config: Config,
     base_plugin_directory_path: PathBuf,
     cache: bool,
-) -> Result<HashMap<String, AvailablePlugin>, ()> {
+) -> Result<Vec<(Uuid, AvailablePlugin)>, ()> {
     info!("Fetching and storing the plugins");
 
-    let mut available_plugins = HashMap::new();
+    let mut available_plugins = vec![];
 
     let registries = get_cached_plugins(
         &base_plugin_directory_path,
@@ -92,7 +93,7 @@ async fn get_cached_plugins(
     base_plugin_directory_path: &Path,
     config: Config,
     cache: bool,
-    available_plugins: &mut HashMap<String, AvailablePlugin>,
+    available_plugins: &mut Vec<(Uuid, AvailablePlugin)>,
 ) -> HashMap<String, Vec<(String, ConfigPlugin)>> {
     let mut registries = HashMap::new();
 
@@ -112,17 +113,18 @@ async fn get_cached_plugins(
             {
                 Ok(cache_check) => {
                     if let Some(plugin_version) = cache_check {
-                        available_plugins.insert(
-                            plugin_uid,
+                        available_plugins.push((
+                            Uuid::new_v4(),
                             AvailablePlugin {
                                 registry_id: registry_id.to_string(),
                                 id: plugin_id.to_string(),
+                                user_id: plugin_uid,
                                 version: plugin_version,
                                 permissions: plugin_options.permissions,
                                 environment: plugin_options.environment,
                                 settings: plugin_options.settings,
                             },
-                        );
+                        ));
 
                         continue;
                     }
@@ -146,7 +148,7 @@ async fn fetch_non_cached_plugins(
     http_client: Arc<HttpClient>,
     base_plugin_directory_path: &Path,
     registries: HashMap<String, Vec<(String, ConfigPlugin)>>,
-    available_plugins: &mut HashMap<String, AvailablePlugin>,
+    available_plugins: &mut Vec<(Uuid, AvailablePlugin)>,
 ) {
     let mut registry_tasks: RegistryTask = vec![];
 
@@ -202,10 +204,11 @@ async fn fetch_non_cached_plugins(
                     .await?;
 
                     Ok((
-                        plugin_uid,
+                        Uuid::new_v4(),
                         AvailablePlugin {
                             registry_id: registry_id.to_string(),
                             id: plugin_id.to_string(),
+                            user_id: plugin_uid,
                             version: plugin_version,
                             permissions: plugin_options.permissions,
                             environment: plugin_options.environment,
@@ -230,8 +233,7 @@ async fn fetch_non_cached_plugins(
         match registry_task.await.unwrap() {
             Ok(available_registry_plugins) => {
                 for available_registry_plugin in available_registry_plugins {
-                    available_plugins
-                        .insert(available_registry_plugin.0, available_registry_plugin.1);
+                    available_plugins.push(available_registry_plugin);
                 }
             }
             Err(err) => {

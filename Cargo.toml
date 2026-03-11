@@ -40,6 +40,8 @@ url = "2"
 wasmtime = "41"
 wasmtime-wasi = "41"
 wasmtime-wasi-http = "41"
+redb = "3"
+uuid = "1"
 
 [profile.release]
 lto = true
