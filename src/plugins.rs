@@ -12,71 +12,39 @@ use serde::{Deserialize, Deserializer};
 use serde_yaml_ng::Value;
 use twilight_model::id::{Id, marker::CommandMarker};
 
-use crate::plugins::discord_bot::plugin::plugin_types::SupportedRegistrations;
+use crate::plugins::discord_bot::plugin::core_import_types::SupportedCoreRegistrations;
 
 wasmtime::component::bindgen!({ imports: { default: async }, exports: { default: async } });
 
-#[derive(Clone, Deserialize)]
+#[derive(Deserialize)]
 pub struct ConfigPlugin {
     pub plugin: String,
     pub cache: Option<bool>,
     #[serde(default = "ConfigPlugin::permissions_default")]
-    pub permissions: SupportedRegistrations,
+    pub permissions: SupportedCoreRegistrations, // TODO: Add Discord permission support back in
     pub environment: Option<HashMap<String, String>>,
     pub settings: Option<Value>,
 }
 
 impl ConfigPlugin {
-    fn permissions_default() -> SupportedRegistrations {
-        let mut supported_registrations = SupportedRegistrations::all();
-
-        supported_registrations &= !SupportedRegistrations::SHUTDOWN;
-
-        supported_registrations
+    fn permissions_default() -> SupportedCoreRegistrations {
+        SupportedCoreRegistrations::empty()
     }
 }
 
-impl<'de> Deserialize<'de> for SupportedRegistrations {
+impl<'de> Deserialize<'de> for SupportedCoreRegistrations {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let mut supported_registrations = SupportedRegistrations::empty();
+        let mut supported_registrations = SupportedCoreRegistrations::empty();
 
         let supported_registration_strings = Vec::<String>::deserialize(deserializer)?;
 
         for supported_registration_string in supported_registration_strings {
             match supported_registration_string.to_uppercase().as_str() {
                 "DEPENDENCY_FUNCTIONS" => {
-                    supported_registrations |= SupportedRegistrations::DEPENDENCY_FUNCTIONS;
-                }
-                "DISCORD_EVENT_MESSAGE_CREATE" => {
-                    supported_registrations |= SupportedRegistrations::DISCORD_EVENT_MESSAGE_CREATE;
-                }
-                "DISCORD_EVENT_INTERACTION_CREATE" => {
-                    supported_registrations |=
-                        SupportedRegistrations::DISCORD_EVENT_INTERACTION_CREATE;
-                }
-                "DISCORD_EVENT_THREAD_CREATE" => {
-                    supported_registrations |= SupportedRegistrations::DISCORD_EVENT_THREAD_CREATE;
-                }
-                "DISCORD_EVENT_THREAD_DELETE" => {
-                    supported_registrations |= SupportedRegistrations::DISCORD_EVENT_THREAD_DELETE;
-                }
-                "DISCORD_EVENT_THREAD_LIST_SYNC" => {
-                    supported_registrations |=
-                        SupportedRegistrations::DISCORD_EVENT_THREAD_LIST_SYNC;
-                }
-                "DISCORD_EVENT_THREAD_MEMBER_UPDATE" => {
-                    supported_registrations |=
-                        SupportedRegistrations::DISCORD_EVENT_THREAD_MEMBER_UPDATE;
-                }
-                "DISCORD_EVENT_THREAD_MEMBERS_UPDATE" => {
-                    supported_registrations |=
-                        SupportedRegistrations::DISCORD_EVENT_THREAD_MEMBERS_UPDATE;
-                }
-                "DISCORD_EVENT_THREAD_UPDATE" => {
-                    supported_registrations |= SupportedRegistrations::DISCORD_EVENT_THREAD_UPDATE;
+                    supported_registrations |= SupportedCoreRegistrations::DEPENDENCY_FUNCTIONS;
                 }
                 "SHUTDOWN" => {
-                    supported_registrations |= SupportedRegistrations::SHUTDOWN;
+                    supported_registrations |= SupportedCoreRegistrations::SHUTDOWN;
                 }
                 &_ => unimplemented!(),
             }
@@ -89,8 +57,9 @@ impl<'de> Deserialize<'de> for SupportedRegistrations {
 pub struct AvailablePlugin {
     pub registry_id: String,
     pub id: String,
+    pub user_id: String,
     pub version: Version,
-    pub permissions: SupportedRegistrations,
+    pub permissions: SupportedCoreRegistrations,
     pub environment: Option<HashMap<String, String>>,
     pub settings: Option<Value>,
 }

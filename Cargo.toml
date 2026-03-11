@@ -14,6 +14,7 @@ bytes = "1"
 chrono = "0.4"
 clap = { version = "4", features = ["derive"] }
 dotenvy = "0.15"
+fjall = "3"
 indexmap = "2"
 reqwest = { version = "0.13", features = ["hickory-dns"] }
 rustls = "0.23"
@@ -40,6 +41,7 @@ url = "2"
 wasmtime = "41"
 wasmtime-wasi = "41"
 wasmtime-wasi-http = "41"
+uuid = "1"
 
 [profile.release]
 lto = true
