@@ -1,0 +1,75 @@
+interface core-types {
+    type json = list<u8>;
+}
+
+interface core-import-types {
+    type error = string;
+
+    enum log-levels {
+        trace,
+        debug,
+        info,
+        warn,
+        error,
+    }
+
+    flags supported-core-registrations {
+        scheduled-jobs,
+        dependency-functions,
+        shutdown,
+    }
+
+    /// All registrations are opt in.
+    ///
+    /// The `scheduled-jobs` field list entries should exist out of an ID and cron values.
+    ///
+    /// cron: https://en.wikipedia.org/wiki/Cron
+    record core-registrations {
+        scheduled-jobs: option<list<tuple<string, list<string>>>>,
+        dependency-functions: option<list<string>>,
+        shutdown: option<bool>,
+    }
+
+    /// The `scheduled-jobs` and `dependency-functions` fields return separate lists of successful and failed IDs.
+    ///
+    /// The `shutdown` field returns a result to indicate if the shutdown registration was accepted or not.
+    record core-registrations-result {
+        scheduled-jobs: tuple<list<string>, list<string>>,
+        dependency-functions: tuple<list<string>, list<string>>,
+        shutdown: result,
+    }
+}
+
+interface core-export-types {
+    type error = string;
+}
+
+interface core-import-functions {
+    use core-import-types.{error};
+    use core-import-types.{log-levels, core-registrations, core-registrations-result, supported-core-registrations};
+
+    get-supported-registrations: func() -> supported-core-registrations;
+    register: func(registrations: core-registrations) -> core-registrations-result;
+
+    log: func(level: log-levels, message: string);
+
+    shutdown: func(restart: bool);
+
+    /// The `params` parameter and result ok value are bytes. The serialized format has to be decided between plugins.
+    dependency-function: func(dependency-id: string, function-id: string, params: list<u8>) -> result<list<u8>, error>;
+}
+
+interface core-export-functions {
+    use core-export-types.{error};
+    use core-types.{json};
+
+    initialization: func(settings: json) -> result<_, error>;
+
+    shutdown: func() -> result<_, error>;
+
+    scheduled-job: func(job-id: string) -> result<_, error>;
+
+    /// The `params` parameter and result ok value are bytes. The serialized format has to be decided between plugins.
+    dependency-function: func(function-id: string, params: list<u8>) -> result<list<u8>, error>;
+}
+

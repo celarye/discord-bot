@@ -1,6 +1,9 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 /* Copyright © 2026 Eduard Smet */
 
+// TODO: Implement a program "core" which handles the database as well as shutdown.
+// This will also store the plugin registrations and more.
+
 #[cfg(target_family = "unix")]
 use std::os::unix::process::CommandExt;
 

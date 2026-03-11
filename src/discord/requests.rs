@@ -17,8 +17,8 @@ use twilight_model::{
 use crate::{
     discord::DiscordBotClient,
     plugins::discord_bot::plugin::{
-        discord_types::Contents,
-        host_functions::{DiscordRequests, DiscordResponses},
+        discord_import_functions::{DiscordRequests, DiscordResponses},
+        discord_import_types::Body,
     },
 };
 
@@ -154,8 +154,8 @@ impl DiscordBotClient {
                 let request_builder = Request::builder(&Route::CreateForumThread { channel_id });
 
                 let request_builder = match content {
-                    Contents::Json(bytes) => request_builder.body(bytes),
-                    Contents::Form(buffer) => match request_builder.multipart(buffer) {
+                    Body::Json(bytes) => request_builder.body(bytes),
+                    Body::Form(buffer) => match request_builder.multipart(buffer) {
                         Ok(request) => request,
                         Err(err) => {
                             return Err(err.to_string());
@@ -176,8 +176,8 @@ impl DiscordBotClient {
                 let request_builder = Request::builder(&Route::CreateMessage { channel_id });
 
                 let request_builder = match content {
-                    Contents::Json(bytes) => request_builder.body(bytes),
-                    Contents::Form(buffer) => match request_builder.multipart(buffer) {
+                    Body::Json(bytes) => request_builder.body(bytes),
+                    Body::Form(buffer) => match request_builder.multipart(buffer) {
                         Ok(request) => request,
                         Err(err) => {
                             return Err(err.to_string());

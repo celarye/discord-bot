@@ -8,8 +8,7 @@ use twilight_gateway::Event;
 use twilight_model::application::interaction::InteractionData;
 
 use crate::{
-    discord::DiscordBotClient,
-    plugins::discord_bot::plugin::discord_types::Events as DiscordEvents,
+    discord::DiscordBotClient, plugins::discord_bot::plugin::discord_export_types::DiscordEvents,
     utils::channels::RuntimeMessages,
 };
 

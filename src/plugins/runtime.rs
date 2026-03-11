@@ -3,12 +3,7 @@
 
 pub mod internal;
 
-use std::{
-    collections::{HashMap, HashSet},
-    fs,
-    path::Path,
-    sync::Arc,
-};
+use std::{collections::HashMap, fs, path::Path, sync::Arc};
 
 use serde_yaml_ng::Value;
 use tokio::sync::{
@@ -25,10 +20,8 @@ use wasmtime_wasi_http::WasiHttpCtx;
 use crate::{
     SHUTDOWN, Shutdown,
     plugins::{
-        AvailablePlugin, Plugin, PluginRegistrationRequests,
-        PluginRegistrationRequestsApplicationCommand, PluginRegistrationRequestsScheduledJob,
-        PluginRegistrations, builder::PluginBuilder,
-        discord_bot::plugin::discord_types::Events as DiscordEvents,
+        AvailablePlugin, Plugin, PluginRegistrations, builder::PluginBuilder,
+        discord_bot::plugin::discord_export_types::DiscordEvents,
         runtime::internal::InternalRuntime,
     },
     utils::channels::{DiscordBotClientMessages, JobSchedulerMessages, RuntimeMessages},
@@ -92,15 +85,6 @@ impl Runtime {
         plugin_registrations: Arc<RwLock<PluginRegistrations>>,
         directory: &Path,
     ) -> Result<(), ()> {
-        let mut registration_requests = PluginRegistrationRequests {
-            discord_event_interaction_create: super::PluginRegistrationRequestsInteractionCreate {
-                application_commands: vec![],
-                message_component: vec![],
-                modals: vec![],
-            },
-            scheduled_jobs: vec![],
-        };
-
         for (plugin_uid, plugin) in plugins {
             let plugin_directory = directory
                 .join(&plugin.registry_id)
@@ -122,8 +106,7 @@ impl Runtime {
                 Ok(component) => component,
                 Err(err) => {
                     error!(
-                        "An error occured while creating a WASI component from the {} plugin: {err}",
-                        plugin_uid
+                        "An error occured while creating a WASI component from the {plugin_uid} plugin: {err}"
                     );
                     continue;
                 }
@@ -187,30 +170,24 @@ impl Runtime {
                     }
                 };
 
-            let plugin_registrations_request = match instance
-                .discord_bot_plugin_plugin_functions()
+            match instance
+                .discord_bot_plugin_core_export_functions()
                 .call_initialization(
                     &mut store,
                     &sonic_rs::to_vec(&plugin.settings.unwrap_or(Value::default())).unwrap(),
-                    plugin.permissions,
                 )
                 .await
             {
-                Ok(init_result) => match init_result {
-                    Ok(registrations_request) => registrations_request,
-                    Err(err) => {
+                Ok(init_result) => {
+                    if let Err(err) = init_result {
                         error!(
-                            "Failed to initialize the {} plugin, error: {}",
-                            &plugin_uid, &err
+                            "the {plugin_uid} plugin returned an error while intiializing: {err}"
                         );
                         continue;
                     }
-                },
+                }
                 Err(err) => {
-                    error!(
-                        "The {} plugin exprienced a critical error: {}",
-                        &plugin_uid, &err
-                    );
+                    error!("The {plugin_uid} plugin exprienced a critical error: {err}");
                     continue;
                 }
             };
@@ -220,159 +197,12 @@ impl Runtime {
                 store: Mutex::new(store),
             };
 
-            if let Some(discord_events) = plugin_registrations_request.discord_events {
-                if discord_events.message_create {
-                    plugin_registrations
-                        .write()
-                        .await
-                        .discord_events
-                        .message_create
-                        .push(plugin_uid.clone());
-                }
-
-                if discord_events.thread_create {
-                    plugin_registrations
-                        .write()
-                        .await
-                        .discord_events
-                        .thread_create
-                        .push(plugin_uid.clone());
-                }
-
-                if discord_events.thread_delete {
-                    plugin_registrations
-                        .write()
-                        .await
-                        .discord_events
-                        .thread_delete
-                        .push(plugin_uid.clone());
-                }
-
-                if discord_events.thread_list_sync {
-                    plugin_registrations
-                        .write()
-                        .await
-                        .discord_events
-                        .thread_list_sync
-                        .push(plugin_uid.clone());
-                }
-
-                if discord_events.thread_member_update {
-                    plugin_registrations
-                        .write()
-                        .await
-                        .discord_events
-                        .thread_member_update
-                        .push(plugin_uid.clone());
-                }
-
-                if discord_events.thread_members_update {
-                    plugin_registrations
-                        .write()
-                        .await
-                        .discord_events
-                        .thread_members_update
-                        .push(plugin_uid.clone());
-                }
-
-                if discord_events.thread_update {
-                    plugin_registrations
-                        .write()
-                        .await
-                        .discord_events
-                        .thread_update
-                        .push(plugin_uid.clone());
-                }
-
-                if let Some(interaction_create) = discord_events.interaction_create {
-                    if let Some(application_commands) = interaction_create.application_commands {
-                        for application_command in application_commands {
-                            registration_requests
-                                .discord_event_interaction_create
-                                .application_commands
-                                .push(PluginRegistrationRequestsApplicationCommand {
-                                    plugin_id: plugin_uid.clone(),
-                                    data: application_command,
-                                });
-                        }
-                    }
-
-                    if let Some(message_components) = interaction_create.message_components {
-                        // TODO: Prevent duplicate entries
-
-                        for message_component in message_components {
-                            plugin_registrations
-                                .write()
-                                .await
-                                .discord_events
-                                .interaction_create
-                                .message_components
-                                .insert(message_component.clone(), plugin_uid.clone());
-                        }
-                    }
-
-                    if let Some(modals) = interaction_create.modals {
-                        // TODO: Prevent duplicate entries
-
-                        for modal in modals {
-                            plugin_registrations
-                                .write()
-                                .await
-                                .discord_events
-                                .interaction_create
-                                .modals
-                                .insert(modal.clone(), plugin_uid.clone());
-                        }
-                    }
-                }
-            }
-
-            if let Some(scheduled_jobs) = plugin_registrations_request.scheduled_jobs {
-                for scheduled_job in scheduled_jobs {
-                    registration_requests.scheduled_jobs.push(
-                        PluginRegistrationRequestsScheduledJob {
-                            plugin_id: plugin_uid.clone(),
-                            id: scheduled_job.0,
-                            crons: scheduled_job.1,
-                        },
-                    );
-                }
-            }
-
-            if let Some(dependency_functions) = plugin_registrations_request.dependency_functions {
-                for dependency_function in dependency_functions {
-                    let mut plugin_registrations = plugin_registrations.write().await;
-                    let functions = plugin_registrations
-                        .dependency_functions
-                        .entry(plugin_uid.clone())
-                        .or_insert(HashSet::new());
-
-                    functions.insert(dependency_function);
-                }
-            }
-
             runtime
                 .plugins
                 .write()
                 .await
                 .insert(plugin_uid, plugin_context);
         }
-
-        let _ = runtime
-            .discord_bot_client_tx
-            .send(DiscordBotClientMessages::RegisterApplicationCommands(
-                registration_requests
-                    .discord_event_interaction_create
-                    .application_commands,
-            ))
-            .await;
-
-        let _ = runtime
-            .job_scheduler_tx
-            .send(JobSchedulerMessages::RegisterScheduledJobs(
-                registration_requests.scheduled_jobs,
-            ))
-            .await;
 
         Ok(())
     }
@@ -385,7 +215,7 @@ impl Runtime {
 
         match plugin
             .instance
-            .discord_bot_plugin_plugin_functions()
+            .discord_bot_plugin_discord_export_functions()
             .call_discord_event(&mut *plugin.store.lock().await, event)
             .await
         {
@@ -409,7 +239,7 @@ impl Runtime {
 
         match plugin
             .instance
-            .discord_bot_plugin_plugin_functions()
+            .discord_bot_plugin_core_export_functions()
             .call_scheduled_job(&mut *plugin.store.lock().await, scheduled_job_name)
             .await
         {
@@ -433,7 +263,7 @@ impl Runtime {
 
         match plugin
             .instance
-            .discord_bot_plugin_plugin_functions()
+            .discord_bot_plugin_core_export_functions()
             .call_shutdown(&mut *plugin.store.lock().await)
             .await
         {

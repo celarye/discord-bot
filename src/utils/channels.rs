@@ -8,8 +8,10 @@ use tokio::sync::{
 
 use crate::plugins::{
     PluginRegistrationRequestsApplicationCommand, PluginRegistrationRequestsScheduledJob,
-    discord_bot::plugin::host_functions::{DiscordRequests, DiscordResponses},
-    exports::discord_bot::plugin::plugin_functions::DiscordEvents,
+    discord_bot::plugin::{
+        discord_export_types::DiscordEvents,
+        discord_import_types::{DiscordRequests, DiscordResponses},
+    },
 };
 
 pub enum DiscordBotClientMessages {
