@@ -337,7 +337,7 @@ fn get_plugin_matching_version(
         for plugin_version in plugin_versions {
             let plugin_version_version = Version::parse(&plugin_version.version)?;
 
-            if check_plugin_version_usability(plugin_version)
+            if check_plugin_version_usability(plugin_version)?
                 && &plugin_version_version
                     > plugin_latest_version
                         .as_ref()
@@ -351,7 +351,7 @@ fn get_plugin_matching_version(
     } else if let Some(plugin_version) = plugin_versions
         .iter()
         .find(|v| v.version == requested_version)
-        && check_plugin_version_usability(plugin_version)
+        && check_plugin_version_usability(plugin_version)?
     {
         return Ok(Some(Version::parse(&plugin_version.version)?));
     }
@@ -359,24 +359,21 @@ fn get_plugin_matching_version(
     Ok(None)
 }
 
-fn check_plugin_version_usability(plugin_version: &RegistryPluginVersion) -> bool {
+fn check_plugin_version_usability(plugin_version: &RegistryPluginVersion) -> Result<bool> {
     if let Some(deprecated) = plugin_version.deprecated
         && deprecated
     {
-        return false;
+        return Ok(false);
     }
 
-    let Ok(plugin_compatible_program_version) =
-        VersionReq::parse(&plugin_version.compatible_program_version)
-    else {
-        return false;
-    };
+    let plugin_compatible_program_version =
+        VersionReq::parse(&plugin_version.compatible_program_version)?;
 
     if !plugin_compatible_program_version.matches(&PROGRAM_VERSION) {
-        return false;
+        return Ok(false);
     }
 
-    true
+    Ok(true)
 }
 
 async fn fetch_registry(
